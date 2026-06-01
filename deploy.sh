@@ -1,16 +1,25 @@
 #!/bin/bash
-BOLD='\033[1m'; RESET='\033[0m'
-GREEN='\033[1;32m'; RED='\033[1;31m'; CYAN='\033[1;36m'
-YELLOW='\033[1;33m'; MAGENTA='\033[1;35m'; WHITE='\033[1;37m'
+
+BOLD="\033[1m"
+RESET="\033[0m"
+GREEN="\033[1;32m"
+RED="\033[1;31m"
+CYAN="\033[1;36m"
+YELLOW="\033[1;33m"
+MAGENTA="\033[1;35m"
+WHITE="\033[1;37m"
 
 loading() {
     local t="$1"
     local s="⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
-    for ((i=0;i<5;i++)); do for ((j=0;j<${#s};j++)); do echo -ne "\r  ${CYAN}${s:$j:1} ${t}...${RESET}"; sleep 0.05; done; done
-    echo -ne "\r  ${GREEN}DONE: ${t}${RESET}\n"
+    for ((i=0;i<5;i++)); do for ((j=0;j<${#s};j++)); do
+        printf "\r  ${CYAN}${s:$j:1} ${t}...${RESET}"
+        sleep 0.05
+    done; done
+    printf "\r  ${GREEN}DONE: ${t}${RESET}\n"
 }
 
-center() { printf "  %s\n" "$1"; }
+center() { printf "  ${1}\n"; }
 
 clear
 echo ""
@@ -23,7 +32,8 @@ PROJECT_ID=$(gcloud config get-value project 2>/dev/null | tr -d '[:space:]')
 center "${CYAN}PROJECT: ${GREEN}${PROJECT_ID}${RESET}"
 echo ""
 
-read -r -p "$(echo -e "  ${CYAN}SERVICE NAME [prvtspyyy]: ${RESET}")" INPUT_NAME
+printf "  ${CYAN}SERVICE NAME [prvtspyyy]: ${RESET}"
+read -r INPUT_NAME
 SERVICE_NAME=${INPUT_NAME:-prvtspyyy}
 
 echo ""
@@ -34,7 +44,8 @@ center "${YELLOW}5) asia-east1        6) asia-northeast1${RESET}"
 center "${YELLOW}7) europe-west1      8) europe-west4${RESET}"
 center "${YELLOW}9) australia-southeast1${RESET}"
 echo ""
-read -r -p "$(echo -e "  ${CYAN}CHOICE [1]: ${RESET}")" REGION_CHOICE
+printf "  ${CYAN}CHOICE [1]: ${RESET}"
+read -r REGION_CHOICE
 case "$REGION_CHOICE" in
     2) REGION="us-east1";; 3) REGION="us-west1";; 4) REGION="asia-southeast1";;
     5) REGION="asia-east1";; 6) REGION="asia-northeast1";; 7) REGION="europe-west1";;
@@ -47,12 +58,18 @@ center "${YELLOW}1) BROWSING     2) STREAMING${RESET}"
 center "${YELLOW}3) GAMING       4) ULTRA${RESET}"
 center "${YELLOW}5) CUSTOM${RESET}"
 echo ""
-read -r -p "$(echo -e "  ${CYAN}CHOICE [4]: ${RESET}")" MODE_CHOICE
+printf "  ${CYAN}CHOICE [4]: ${RESET}"
+read -r MODE_CHOICE
 case "$MODE_CHOICE" in
     1) CPU="1"; RAM="2Gi"; MAX_INSTANCES="4"; MODE="BROWSING";;
     2) CPU="2"; RAM="4Gi"; MAX_INSTANCES="4"; MODE="STREAMING";;
     3) CPU="4"; RAM="8Gi"; MAX_INSTANCES="4"; MODE="GAMING";;
-    5) read -r -p "  CPU (1/2/4/8): " CPU; read -r -p "  RAM (2Gi/4Gi/8Gi/16Gi/32Gi): " RAM; read -r -p "  MAX INSTANCES: " MAX_INSTANCES; MODE="CUSTOM";;
+    5)
+        printf "  CPU (1/2/4/8): "; read -r CPU
+        printf "  RAM (2Gi/4Gi/8Gi/16Gi/32Gi): "; read -r RAM
+        printf "  MAX INSTANCES: "; read -r MAX_INSTANCES
+        MODE="CUSTOM"
+        ;;
     *) CPU="8"; RAM="32Gi"; MAX_INSTANCES="1"; MODE="ULTRA";;
 esac
 
@@ -75,7 +92,7 @@ loading "ENABLING APIS"
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com --project="$PROJECT_ID" --quiet 2>/dev/null
 
 loading "BUILDING IMAGE"
-gcloud builds submit --tag "gcr.io/${PROJECT_ID}/${SERVICE_NAME}" . --project="$PROJECT_ID" --region="$REGION" --quiet > build.log 2>&1 || { echo -e "  ${RED}BUILD FAILED${RESET}"; tail -n 10 build.log; exit 1; }
+gcloud builds submit --tag "gcr.io/${PROJECT_ID}/${SERVICE_NAME}" . --project="$PROJECT_ID" --region="$REGION" --quiet > build.log 2>&1 || { printf "  ${RED}BUILD FAILED${RESET}\n"; tail -n 10 build.log; exit 1; }
 
 loading "DEPLOYING TO CLOUD RUN"
 gcloud run deploy "$SERVICE_NAME" \
@@ -84,7 +101,7 @@ gcloud run deploy "$SERVICE_NAME" \
   --cpu "$CPU" --memory "$RAM" --port 8080 \
   --concurrency 1000 --cpu-boost --no-cpu-throttling \
   --timeout 3600 --min-instances 1 --max-instances "$MAX_INSTANCES" \
-  --allow-unauthenticated --project="$PROJECT_ID" --quiet > deploy.log 2>&1 || { echo -e "  ${RED}DEPLOY FAILED${RESET}"; tail -n 10 deploy.log; exit 1; }
+  --allow-unauthenticated --project="$PROJECT_ID" --quiet > deploy.log 2>&1 || { printf "  ${RED}DEPLOY FAILED${RESET}\n"; tail -n 10 deploy.log; exit 1; }
 
 SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --region "$REGION" --project="$PROJECT_ID" --format='value(status.url)' 2>/dev/null)
 CLEAN_HOST=$(echo "$SERVICE_URL" | sed 's|https://||')
