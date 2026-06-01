@@ -53,8 +53,17 @@ case "$MODE_CHOICE" in
     2) CPU="2"; RAM="4Gi"; MAX_INSTANCES="4"; MODE="STREAMING";;
     3) CPU="4"; RAM="8Gi"; MAX_INSTANCES="4"; MODE="GAMING";;
     5) read -r -p "  CPU (1/2/4/8): " CPU; read -r -p "  RAM (2Gi/4Gi/8Gi/16Gi/32Gi): " RAM; read -r -p "  MAX INSTANCES: " MAX_INSTANCES; MODE="CUSTOM";;
-    *) CPU="8"; RAM="32Gi"; MAX_INSTANCES="2"; MODE="ULTRA";;
+    *) CPU="8"; RAM="32Gi"; MAX_INSTANCES="1"; MODE="ULTRA";;
 esac
+
+if [ "$CPU" -ge 8 ] && [ "$MAX_INSTANCES" -gt 2 ]; then
+    MAX_INSTANCES="2"
+fi
+
+RAM_NUM=$(echo "$RAM" | sed 's/Gi//')
+if [ "$RAM_NUM" -ge 16 ] && [ "$MAX_INSTANCES" -gt 1 ]; then
+    MAX_INSTANCES="1"
+fi
 
 echo ""
 center "${CYAN}MODE: ${GREEN}${MODE}${RESET} | ${CYAN}CPU: ${GREEN}${CPU}${RESET} | ${CYAN}RAM: ${GREEN}${RAM}${RESET} | ${CYAN}INSTANCES: ${GREEN}${MAX_INSTANCES}${RESET} | ${CYAN}REGION: ${GREEN}${REGION}${RESET}"
