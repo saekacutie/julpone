@@ -10,26 +10,29 @@ loading() {
     echo -ne "\r  ${GREEN}DONE: ${t}${RESET}\n"
 }
 
+center() { printf "  %s\n" "$1"; }
+
 clear
 echo ""
-echo -e "  ${BOLD}${WHITE}SSH VM DEPLOYER${RESET}"
-echo -e "  ${MAGENTA}404 NOT FOUND GCP${RESET}"
-echo -e "  ${GREEN}fb.com/saekacutiee${RESET}"
+center "${BOLD}${WHITE}SSH VM DEPLOYER${RESET}"
+center "${MAGENTA}404 NOT FOUND GCP${RESET}"
+center "${GREEN}fb.com/saekacutiee${RESET}"
 echo ""
 
 PROJECT_ID=$(gcloud config get-value project 2>/dev/null | tr -d '[:space:]')
-echo -e "  ${CYAN}PROJECT: ${GREEN}${PROJECT_ID}${RESET}"
+center "${CYAN}PROJECT: ${GREEN}${PROJECT_ID}${RESET}"
 echo ""
 
-echo -e "  ${CYAN}SELECT ACTION:${RESET}"
-echo -e "  ${YELLOW}1) CREATE SSH VM${RESET}"
-echo -e "  ${YELLOW}2) ADD SSH USER${RESET}"
-echo -e "  ${YELLOW}3) DELETE SSH USER${RESET}"
-echo -e "  ${YELLOW}4) BLOCK SSH USER${RESET}"
-echo -e "  ${YELLOW}5) SET SERVER MESSAGE${RESET}"
-echo -e "  ${YELLOW}6) ENABLE LOW LATENCY${RESET}"
-echo -e "  ${YELLOW}7) LIST USERS${RESET}"
-echo -e "  ${YELLOW}8) DELETE VM${RESET}"
+center "${CYAN}SELECT ACTION:${RESET}"
+echo ""
+center "${YELLOW}1) CREATE SSH VM${RESET}"
+center "${YELLOW}2) ADD SSH USER${RESET}"
+center "${YELLOW}3) DELETE SSH USER${RESET}"
+center "${YELLOW}4) BLOCK SSH USER${RESET}"
+center "${YELLOW}5) SET SERVER MESSAGE${RESET}"
+center "${YELLOW}6) ENABLE LOW LATENCY${RESET}"
+center "${YELLOW}7) LIST USERS${RESET}"
+center "${YELLOW}8) DELETE VM${RESET}"
 echo ""
 read -r -p "$(echo -e "  ${CYAN}CHOICE [1]: ${RESET}")" ACTION_CHOICE
 ACTION_CHOICE=${ACTION_CHOICE:-1}
@@ -47,11 +50,11 @@ case "$ACTION_CHOICE" in
         INSTANCE_NAME=${INPUT_NAME:-ssh-vm}
 
         echo ""
-        echo -e "  ${CYAN}SELECT MACHINE TYPE:${RESET}"
-        echo -e "  ${YELLOW}1) BASIC     (e2-micro, 1 vCPU, 1 GB)${RESET}"
-        echo -e "  ${YELLOW}2) MEDIUM    (e2-medium, 1 vCPU, 4 GB)${RESET}"
-        echo -e "  ${YELLOW}3) HIGH      (e2-standard-2, 2 vCPU, 8 GB)${RESET}"
-        echo -e "  ${YELLOW}4) ULTRA     (e2-standard-4, 4 vCPU, 16 GB)${RESET}"
+        center "${CYAN}SELECT MACHINE TYPE:${RESET}"
+        center "${YELLOW}1) BASIC     (e2-micro, 1 vCPU, 1 GB)${RESET}"
+        center "${YELLOW}2) MEDIUM    (e2-medium, 1 vCPU, 4 GB)${RESET}"
+        center "${YELLOW}3) HIGH      (e2-standard-2, 2 vCPU, 8 GB)${RESET}"
+        center "${YELLOW}4) ULTRA     (e2-standard-4, 4 vCPU, 16 GB)${RESET}"
         echo ""
         read -r -p "$(echo -e "  ${CYAN}CHOICE [2]: ${RESET}")" MACHINE_CHOICE
         case "$MACHINE_CHOICE" in
@@ -62,26 +65,26 @@ case "$ACTION_CHOICE" in
         esac
 
         echo ""
-        echo -e "  ${CYAN}SELECT SSH PORT:${RESET}"
-        echo -e "  ${YELLOW}1) 22  (Standard)${RESET}"
-        echo -e "  ${YELLOW}2) 443 (Alternative)${RESET}"
+        center "${CYAN}SELECT SSH PORT:${RESET}"
+        center "${YELLOW}1) 22  (Standard)${RESET}"
+        center "${YELLOW}2) 443 (Alternative)${RESET}"
         echo ""
         read -r -p "$(echo -e "  ${CYAN}CHOICE [1]: ${RESET}")" PORT_CHOICE
         if [ "$PORT_CHOICE" = "2" ]; then SSH_PORT="443"; fi
 
         echo ""
         loading "ENABLING COMPUTE API"
-        gcloud services enable compute.googleapis.com --project=$PROJECT_ID --quiet 2>/dev/null
+        gcloud services enable compute.googleapis.com --project="$PROJECT_ID" --quiet 2>/dev/null
 
         loading "CREATING FIREWALL"
-        gcloud compute firewall-rules create allow-ssh-${SSH_PORT} \
-          --project=$PROJECT_ID --direction=INGRESS --priority=1000 \
-          --network=default --action=ALLOW --rules=tcp:${SSH_PORT} \
+        gcloud compute firewall-rules create "allow-ssh-${SSH_PORT}-${INSTANCE_NAME}" \
+          --project="$PROJECT_ID" --direction=INGRESS --priority=1000 \
+          --network=default --action=ALLOW --rules="tcp:${SSH_PORT}" \
           --source-ranges=0.0.0.0/0 --target-tags=ssh-vm --quiet 2>/dev/null
 
         loading "CREATING VM"
         gcloud compute instances create "$INSTANCE_NAME" \
-          --project=$PROJECT_ID --zone=$ZONE --machine-type=$MACHINE_TYPE \
+          --project="$PROJECT_ID" --zone="$ZONE" --machine-type="$MACHINE_TYPE" \
           --image-family=ubuntu-2204-lts --image-project=ubuntu-os-cloud \
           --boot-disk-size=10GB --tags=ssh-vm \
           --metadata=startup-script="#!/bin/bash
@@ -109,58 +112,86 @@ BEOF
             systemctl restart sshd 2>/dev/null || service ssh restart 2>/dev/null
 " --quiet 2>/dev/null
 
-        VM_IP=$(gcloud compute instances describe "$INSTANCE_NAME" --zone=$ZONE --project=$PROJECT_ID --format='get(networkInterfaces[0].accessConfigs[0].natIP)' 2>/dev/null)
-        if [ -z "$VM_IP" ]; then sleep 10; VM_IP=$(gcloud compute instances describe "$INSTANCE_NAME" --zone=$ZONE --project=$PROJECT_ID --format='get(networkInterfaces[0].accessConfigs[0].natIP)' 2>/dev/null); fi
+        VM_IP=$(gcloud compute instances describe "$INSTANCE_NAME" --zone="$ZONE" --project="$PROJECT_ID" --format='get(networkInterfaces[0].accessConfigs[0].natIP)' 2>/dev/null)
+        if [ -z "$VM_IP" ]; then
+            sleep 10
+            VM_IP=$(gcloud compute instances describe "$INSTANCE_NAME" --zone="$ZONE" --project="$PROJECT_ID" --format='get(networkInterfaces[0].accessConfigs[0].natIP)' 2>/dev/null)
+        fi
 
         echo ""
-        echo -e "  ${GREEN}VM CREATED${RESET}"
-        echo -e "  ${CYAN}IP:   ${GREEN}${VM_IP}${RESET}"
-        echo -e "  ${CYAN}PORT: ${GREEN}${SSH_PORT}${RESET}"
-        echo -e "  ${CYAN}USER: ${GREEN}saeka${RESET}"
-        echo -e "  ${CYAN}PASS: ${GREEN}${PASSWORD}${RESET}"
-        echo -e "  ${CYAN}SSH:  ${GREEN}ssh saeka@${VM_IP} -p ${SSH_PORT}${RESET}"
+        center "${GREEN}VM CREATED${RESET}"
+        echo ""
+        center "${CYAN}IP:   ${GREEN}${VM_IP}${RESET}"
+        center "${CYAN}PORT: ${GREEN}${SSH_PORT}${RESET}"
+        center "${CYAN}USER: ${GREEN}saeka${RESET}"
+        center "${CYAN}PASS: ${GREEN}${PASSWORD}${RESET}"
+        center "${CYAN}SSH:  ${GREEN}ssh saeka@${VM_IP} -p ${SSH_PORT}${RESET}"
         ;;
     2)
+        echo ""
+        read -r -p "$(echo -e "  ${CYAN}VM NAME [ssh-vm]: ${RESET}")" INSTANCE_NAME
+        INSTANCE_NAME=${INSTANCE_NAME:-ssh-vm}
         read -r -p "$(echo -e "  ${CYAN}NEW USERNAME: ${RESET}")" NEW_USER
         read -r -p "$(echo -e "  ${CYAN}NEW PASSWORD: ${RESET}")" NEW_PASS
-        gcloud compute ssh "$INSTANCE_NAME" --zone=$ZONE --project=$PROJECT_ID --command="sudo useradd -m -s /bin/bash $NEW_USER && echo '$NEW_USER:$NEW_PASS' | sudo chpasswd && echo 'User $NEW_USER added'" 2>/dev/null
-        echo -e "  ${GREEN}USER $NEW_USER ADDED${RESET}"
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --project="$PROJECT_ID" --command="sudo useradd -m -s /bin/bash $NEW_USER && echo '$NEW_USER:$NEW_PASS' | sudo chpasswd && echo 'User $NEW_USER added'" 2>/dev/null
+        center "${GREEN}USER $NEW_USER ADDED${RESET}"
         ;;
     3)
+        echo ""
+        read -r -p "$(echo -e "  ${CYAN}VM NAME [ssh-vm]: ${RESET}")" INSTANCE_NAME
+        INSTANCE_NAME=${INSTANCE_NAME:-ssh-vm}
         read -r -p "$(echo -e "  ${CYAN}USERNAME TO DELETE: ${RESET}")" DEL_USER
-        gcloud compute ssh "$INSTANCE_NAME" --zone=$ZONE --project=$PROJECT_ID --command="sudo userdel -r $DEL_USER 2>/dev/null && echo 'User $DEL_USER deleted'" 2>/dev/null
-        echo -e "  ${RED}USER $DEL_USER DELETED${RESET}"
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --project="$PROJECT_ID" --command="sudo userdel -r $DEL_USER 2>/dev/null && echo 'User $DEL_USER deleted'" 2>/dev/null
+        center "${RED}USER $DEL_USER DELETED${RESET}"
         ;;
     4)
+        echo ""
+        read -r -p "$(echo -e "  ${CYAN}VM NAME [ssh-vm]: ${RESET}")" INSTANCE_NAME
+        INSTANCE_NAME=${INSTANCE_NAME:-ssh-vm}
         read -r -p "$(echo -e "  ${CYAN}USERNAME TO BLOCK: ${RESET}")" BLOCK_USER
-        gcloud compute ssh "$INSTANCE_NAME" --zone=$ZONE --project=$PROJECT_ID --command="sudo usermod -L $BLOCK_USER && echo 'User $BLOCK_USER blocked'" 2>/dev/null
-        echo -e "  ${RED}USER $BLOCK_USER BLOCKED${RESET}"
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --project="$PROJECT_ID" --command="sudo usermod -L $BLOCK_USER && echo 'User $BLOCK_USER blocked'" 2>/dev/null
+        center "${RED}USER $BLOCK_USER BLOCKED${RESET}"
         ;;
     5)
-        echo -e "  ${CYAN}ENTER SERVER MESSAGE (type 'DONE' on new line to finish):${RESET}"
-        MSG_FILE="/tmp/banner_msg"
+        echo ""
+        read -r -p "$(echo -e "  ${CYAN}VM NAME [ssh-vm]: ${RESET}")" INSTANCE_NAME
+        INSTANCE_NAME=${INSTANCE_NAME:-ssh-vm}
+        echo ""
+        center "${CYAN}ENTER SERVER MESSAGE (type DONE on a new line to finish):${RESET}"
+        MSG_FILE="/tmp/banner_msg_$$"
         > "$MSG_FILE"
         while read -r line; do
             if [ "$line" = "DONE" ]; then break; fi
             echo "$line" >> "$MSG_FILE"
         done
-        gcloud compute scp "$MSG_FILE" "$INSTANCE_NAME":/tmp/banner_msg --zone=$ZONE --project=$PROJECT_ID --quiet 2>/dev/null
-        gcloud compute ssh "$INSTANCE_NAME" --zone=$ZONE --project=$PROJECT_ID --command="sudo cp /tmp/banner_msg /etc/ssh/banner && sudo systemctl restart sshd" 2>/dev/null
-        echo -e "  ${GREEN}BANNER UPDATED${RESET}"
+        gcloud compute scp "$MSG_FILE" "${INSTANCE_NAME}:/tmp/banner_msg" --zone="$ZONE" --project="$PROJECT_ID" --quiet 2>/dev/null
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --project="$PROJECT_ID" --command="sudo cp /tmp/banner_msg /etc/ssh/banner && sudo systemctl restart sshd" 2>/dev/null
+        center "${GREEN}BANNER UPDATED${RESET}"
         rm -f "$MSG_FILE"
         ;;
     6)
-        gcloud compute ssh "$INSTANCE_NAME" --zone=$ZONE --project=$PROJECT_ID --command="sudo sed -i 's/#UseDNS yes/UseDNS no/' /etc/ssh/sshd_config && sudo sed -i 's/#GSSAPIAuthentication yes/GSSAPIAuthentication no/' /etc/ssh/sshd_config && echo 'TCPKeepAlive yes' | sudo tee -a /etc/ssh/sshd_config && echo 'ClientAliveInterval 15' | sudo tee -a /etc/ssh/sshd_config && sudo systemctl restart sshd && echo 'Low latency enabled'" 2>/dev/null
-        echo -e "  ${GREEN}LOW LATENCY ENABLED${RESET}"
+        echo ""
+        read -r -p "$(echo -e "  ${CYAN}VM NAME [ssh-vm]: ${RESET}")" INSTANCE_NAME
+        INSTANCE_NAME=${INSTANCE_NAME:-ssh-vm}
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --project="$PROJECT_ID" --command="sudo sed -i 's/#UseDNS yes/UseDNS no/' /etc/ssh/sshd_config && sudo sed -i 's/#GSSAPIAuthentication yes/GSSAPIAuthentication no/' /etc/ssh/sshd_config && echo 'TCPKeepAlive yes' | sudo tee -a /etc/ssh/sshd_config && echo 'ClientAliveInterval 15' | sudo tee -a /etc/ssh/sshd_config && sudo systemctl restart sshd && echo 'Low latency enabled'" 2>/dev/null
+        center "${GREEN}LOW LATENCY ENABLED${RESET}"
         ;;
     7)
-        gcloud compute ssh "$INSTANCE_NAME" --zone=$ZONE --project=$PROJECT_ID --command="cut -d: -f1 /etc/passwd | grep -v '^#' | tail -n +10" 2>/dev/null
+        echo ""
+        read -r -p "$(echo -e "  ${CYAN}VM NAME [ssh-vm]: ${RESET}")" INSTANCE_NAME
+        INSTANCE_NAME=${INSTANCE_NAME:-ssh-vm}
+        gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --project="$PROJECT_ID" --command="cut -d: -f1 /etc/passwd | grep -v '^#' | tail -n +10" 2>/dev/null
         ;;
     8)
+        echo ""
+        read -r -p "$(echo -e "  ${CYAN}VM NAME [ssh-vm]: ${RESET}")" INSTANCE_NAME
+        INSTANCE_NAME=${INSTANCE_NAME:-ssh-vm}
         read -r -p "$(echo -e "  ${RED}DELETE VM $INSTANCE_NAME? (yes/no): ${RESET}")" CONFIRM
         if [ "$CONFIRM" = "yes" ]; then
-            gcloud compute instances delete "$INSTANCE_NAME" --zone=$ZONE --project=$PROJECT_ID --quiet 2>/dev/null
-            echo -e "  ${RED}VM DELETED${RESET}"
+            gcloud compute instances delete "$INSTANCE_NAME" --zone="$ZONE" --project="$PROJECT_ID" --quiet 2>/dev/null
+            center "${RED}VM DELETED${RESET}"
+        else
+            center "${CYAN}CANCELLED${RESET}"
         fi
         ;;
 esac
