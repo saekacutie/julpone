@@ -1,6 +1,5 @@
 FROM openresty/openresty:alpine
-RUN apk add --no-cache ca-certificates wget unzip netcat-openbsd openssh-server curl python3 py3-pip
-RUN pip3 install websockets
+RUN apk add --no-cache ca-certificates wget unzip netcat-openbsd openssh-server curl python3 py3-pip py3-websockets
 
 RUN wget -qO /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
     unzip -p /tmp/xray.zip xray > /usr/local/bin/xray && \
