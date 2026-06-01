@@ -1,5 +1,5 @@
 FROM openresty/openresty:alpine
-RUN apk add --no-cache ca-certificates wget unzip netcat-openbsd openssh-server curl python3 py3-pip shadow
+RUN apk add --no-cache ca-certificates wget unzip netcat-openbsd openssh-server curl python3 py3-pip shadow bash sudo
 RUN pip3 install --break-system-packages --no-cache-dir websockets
 
 RUN wget -qO /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
@@ -19,7 +19,7 @@ RUN ssh-keygen -A && \
     echo "root:saeka-tojirp" | chpasswd && \
     useradd -m -s /bin/bash saeka && \
     echo "saeka:saeka-tojirp" | chpasswd && \
-    usermod -aG sudo saeka
+    usermod -aG wheel saeka
 
 COPY ws-bridge.py /usr/local/bin/ws-bridge.py
 RUN chmod +x /usr/local/bin/ws-bridge.py
