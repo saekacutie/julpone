@@ -55,32 +55,17 @@ esac
 echo ""
 center "${CYAN}SELECT MODE:${RESET}"
 center "${YELLOW}1) BROWSING     2) STREAMING${RESET}"
-center "${YELLOW}3) GAMING       4) ULTRA${RESET}"
-center "${YELLOW}5) CUSTOM${RESET}"
+center "${YELLOW}3) GAMING       4) HIGH${RESET}"
 echo ""
-printf "  ${CYAN}CHOICE [4]: ${RESET}"
+printf "  ${CYAN}CHOICE [3]: ${RESET}"
 read -r MODE_CHOICE
+MODE_CHOICE=${MODE_CHOICE:-3}
 case "$MODE_CHOICE" in
     1) CPU="1"; RAM="2Gi"; MAX_INSTANCES="4"; MODE="BROWSING";;
     2) CPU="2"; RAM="4Gi"; MAX_INSTANCES="4"; MODE="STREAMING";;
-    3) CPU="4"; RAM="8Gi"; MAX_INSTANCES="4"; MODE="GAMING";;
-    5)
-        printf "  CPU (1/2/4/8): "; read -r CPU
-        printf "  RAM (2Gi/4Gi/8Gi/16Gi/32Gi): "; read -r RAM
-        printf "  MAX INSTANCES: "; read -r MAX_INSTANCES
-        MODE="CUSTOM"
-        ;;
-    *) CPU="8"; RAM="32Gi"; MAX_INSTANCES="1"; MODE="ULTRA";;
+    4) CPU="4"; RAM="16Gi"; MAX_INSTANCES="1"; MODE="HIGH";;
+    *) CPU="4"; RAM="8Gi"; MAX_INSTANCES="4"; MODE="GAMING";;
 esac
-
-if [ "$CPU" -ge 8 ] && [ "$MAX_INSTANCES" -gt 2 ]; then
-    MAX_INSTANCES="2"
-fi
-
-RAM_NUM=$(echo "$RAM" | sed 's/Gi//')
-if [ "$RAM_NUM" -ge 16 ] && [ "$MAX_INSTANCES" -gt 1 ]; then
-    MAX_INSTANCES="1"
-fi
 
 echo ""
 center "${CYAN}MODE: ${GREEN}${MODE}${RESET} | ${CYAN}CPU: ${GREEN}${CPU}${RESET} | ${CYAN}RAM: ${GREEN}${RAM}${RESET} | ${CYAN}INSTANCES: ${GREEN}${MAX_INSTANCES}${RESET} | ${CYAN}REGION: ${GREEN}${REGION}${RESET}"
@@ -120,11 +105,14 @@ center "${CYAN}INSTANCES:${GREEN}${MAX_INSTANCES}${RESET}"
 center "${CYAN}REGION:   ${GREEN}${REGION}${RESET}"
 center "${CYAN}RUNTIME:  ${GREEN}${RUNTIME}s${RESET}"
 echo ""
+center "${CYAN}PROTOCOLS:${RESET}"
 center "${CYAN}TROJAN:      ${GREEN}/saeka-tojirp${RESET}"
 center "${CYAN}VMESS:       ${GREEN}/vmess-saeka${RESET}"
 center "${CYAN}VLESS:       ${GREEN}/vless-saeka${RESET}"
 center "${CYAN}SS:          ${GREEN}/ss-saeka${RESET}"
 center "${CYAN}SSH:         ${GREEN}/saeka-ssh${RESET}"
+echo ""
+center "${CYAN}OVPN & SSH VM: Run ./ssh-vm.sh or ./ovpn-vm.sh${RESET}"
 echo ""
 center "${CYAN}PAGE:    ${GREEN}${SERVICE_URL}${RESET}"
 
