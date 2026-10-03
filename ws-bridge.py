@@ -4,7 +4,7 @@ import websockets
 import sys
 import os
 
-async def bridge(websocket, path):
+async def bridge(websocket, path=None):
     target_host = os.environ.get('TARGET_HOST', '127.0.0.1')
     target_port = int(os.environ.get('TARGET_PORT', 2222))
 

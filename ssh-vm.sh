@@ -41,7 +41,11 @@ INSTANCE_NAME="ssh-vm"
 ZONE="us-central1-a"
 MACHINE_TYPE="e2-medium"
 SSH_PORT="22"
-PASSWORD="saeka-tojirp"
+# Never hardcode credentials: take from env, or generate a strong one-off password.
+if [ -z "${PASSWORD:-}" ]; then
+    PASSWORD="$(openssl rand -base64 18 | tr -d '/+=' | head -c 20)"
+    echo "  [i] Generated SSH password: ${PASSWORD}  (set PASSWORD env var to override)"
+fi
 
 case "$ACTION_CHOICE" in
     1)

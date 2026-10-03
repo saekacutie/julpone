@@ -51,7 +51,11 @@ OVPN_PROTO="tcp"
 if [ "$PORT_CHOICE" = "1" ]; then OVPN_PORT="1194"; OVPN_PROTO="udp"; fi
 
 ZONE="us-central1-a"
-OVPN_PASSWORD="saeka-tojirp"
+# Never hardcode credentials: take from env, or generate a strong one-off password.
+if [ -z "${OVPN_PASSWORD:-}" ]; then
+    OVPN_PASSWORD="$(openssl rand -base64 18 | tr -d '/+=' | head -c 20)"
+    echo "  [i] Generated OpenVPN password (set OVPN_PASSWORD env var to override)"
+fi
 
 echo ""
 loading "ENABLING COMPUTE API"
